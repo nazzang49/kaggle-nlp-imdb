@@ -188,3 +188,37 @@ for tag, count in zip(vocab, dist):
 
 pd.DataFrame(dist, columns=vocab)
 
+# predict the result using test dataset
+# whether it is recommended or not
+# scikit-learn algorithm
+    # classification
+    # regression
+    # clustering
+    # dimensionality reduction
+
+# prepare X_train, Y_train
+from sklearn.ensemble import RandomForestClassifier
+forest = RandomForestClassifier(n_estimators=100, n_jobs=-1, random_state=2018)
+
+# set X, Y input data
+# preprocessed_dataset_train = X_train
+# train['sentiment'] = Y_train
+forest.fit(train_data_features, train['sentiment'])
+from sklearn.model_selection import cross_val_score
+score = np.mean(cross_val_score(forest, train_data_features, train['sentiment'], cv=10, scoring='roc_auc'))
+
+# replace test dataset to vector by CountVectorizer
+test_data_features = pipeline.transform(preprocessed_dataset_test)
+test_data_features = test_data_features.toarray()
+print(test_data_features[5][:100])
+
+# prediction
+# set X (=featur) -> predict Y (=sentiment)
+result = forest.predict(test_data_features)
+output = pd.DataFrame(data={'id': test['id'], 'sentiment': result})
+print(output.head())
+
+# make csv file with score
+output.to_csv('C:/bag-of-words-dataset/tutorial_1_randomforestclassifier_{0:.5f}.csv'.format(score), index=False, quoting=3)
+
+
