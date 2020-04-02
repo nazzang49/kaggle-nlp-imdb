@@ -21,6 +21,9 @@ from wordcloud import WordCloud, STOPWORDS
 import matplotlib.pyplot as plt
 # show graphs
 import seaborn as sns
+# scikit-learn
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.pipeline import Pipeline
 
 # train dataset -> delimiter is tab / 25000 rows
 train = pd.read_csv("C:/bag-of-words-dataset/labeledTrainData.tsv",
@@ -160,4 +163,28 @@ print('리뷰별 고유 단어 중간 값', train['num_uniq_words'].median())
 sns.distplot(train['num_uniq_words'], bins=100, color='g', ax=axes[1])
 axes[1].axvline(train['num_uniq_words'].median(), linestyle='dashed')
 axes[1].set_title('리뷰별 고유한 단어 수 분포')
+
+# bag of words -> put words which are from sentence into bags (tokenization)
+# count how many each words are included in sentence (array)
+# n-gram -> a rule that slicing sentence by n-words (1, 2, 3, n)
+
+# scikit-learn CountVectorizer -> doing processes above 3-stpes
+# min-df is minimum documents including tokens
+vectorizer = CountVectorizer(analyzer='word', tokenizer=None, preprocessor=None, stop_words=None, min_df=2, ngram_range=(1, 3), max_features=20000)
+
+# saving time by pipeline
+pipeline = Pipeline([('vect', vectorizer)])
+train_data_features = pipeline.fit_transform(preprocessed_dataset_train)
+
+# check vectorized feature data
+print(train_data_features.shape)
+
+# comparison words (20000s)
+vocab = vectorizer.get_feature_names()
+
+dist = np.sum(train_data_features, axis=0)
+for tag, count in zip(vocab, dist):
+    print(count, tag)
+
+pd.DataFrame(dist, columns=vocab)
 
