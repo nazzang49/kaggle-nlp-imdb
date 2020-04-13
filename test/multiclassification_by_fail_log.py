@@ -24,15 +24,13 @@ fail_log = fail_log.sample(frac=1)
 # divide into X, Y
 fail_log_x = fail_log['pfl_return_message']
 fail_log_y = fail_log['pfl_issue_type']
-# divide into train, test (random_state is a seed number for shuffling)
+# divided into train, test (random_state is a seed number for shuffling)
 X_train, X_test, Y_train, Y_test = train_test_split(fail_log_x, fail_log_y, test_size=0.3, random_state=123)
 
 import nltk
 # use download command cuz of nltk bug
-nltk.download('stopwords')
-nltk.download('wordnet')
-from nltk.corpus import stopwords
-from nltk.stem.snowball import SnowballStemmer
+# nltk.download('stopwords')
+# nltk.download('wordnet')
 
 # data preprocessing
 # make a def including whole process of upper steps
@@ -88,5 +86,4 @@ model.fit(train_X, train_Y, epochs=10, batch_size=512, use_multiprocessing=True)
 results = model.evaluate(test_X, test_Y)
 
 # saving this model, and load when you need
-from keras.models import load_model
 model.save('fail_log_automization_model.h5')

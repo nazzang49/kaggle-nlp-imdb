@@ -99,7 +99,7 @@ def review_to_words(raw_review):
     # step5
     stemming_words = [stemmer.stem(w) for w in meaningful_words]
     # return final sentence combined by blank
-    return(' '.join(stemming_words))
+    return (' '.join(stemming_words))
 
 # check def
 print(review_to_words(train['review'][0]))
@@ -198,6 +198,8 @@ pd.DataFrame(dist, columns=vocab)
 
 # prepare X_train, Y_train
 from sklearn.ensemble import RandomForestClassifier
+# n_estimators is a number of tree (RandomForestClassifier is a model shaped by binary-tree)
+# n_jobs is a number of threads -> -1 means that using errthing
 forest = RandomForestClassifier(n_estimators=100, n_jobs=-1, random_state=2018)
 
 # set X, Y input data
@@ -220,5 +222,3 @@ print(output.head())
 
 # make csv file with score
 output.to_csv('C:/bag-of-words-dataset/tutorial_1_randomforestclassifier_{0:.5f}.csv'.format(score), index=False, quoting=3)
-
-
