@@ -41,6 +41,7 @@ class KaggleWord2VecUtility(object):
         return join_words
 
     def review_to_sentences(review, remove_stopwords=False):
+        # review -> one review consists of a lot of sentences
         # load the punkt tokenizer
         """
         pickle -> persist the reference of all variables

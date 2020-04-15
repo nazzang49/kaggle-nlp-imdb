@@ -8,7 +8,7 @@ import pandas as pd
 train = pd.read_csv('C:/bag-of-words-dataset/labeledTrainData.tsv',
                     header=0, delimiter='\t', quoting=3)
 
-test = pd.read_csv('C:/bag-of-words-dataset/labeledTrainData.tsv',
+test = pd.read_csv('C:/bag-of-words-dataset/testData.tsv',
                    header=0, delimiter='\t', quoting=3)
 
 unlabeled_train = pd.read_csv('C:/bag-of-words-dataset/unlabeledTrainData.tsv',
@@ -46,6 +46,7 @@ downsampling = 1e-3 # words' count (usually, 0.001)
 
 from gensim.models import word2vec
 # studying relation among words
+# each length of sentences array is different
 model = word2vec.Word2Vec(sentences,
                           workers=num_workers,
                           size=num_features,
@@ -100,3 +101,66 @@ for word, pos in df.iterrows():
     ax.annotate(word, pos, fontsize=30)
 
 plt.show()
+
+import numpy as np
+
+# calculate average of words' vector for each review
+def make_feature_vec(words, model, num_features):
+    # initialize vector with zero
+    feature_vec = np.zeros((num_features, ), dtype='float32')
+
+    nwords = 0.
+    # call word list from model done with Word2Vec process (word dictionary)
+    index2word_set = set(model.wv.index2word)
+
+    # words = a lot of sentences = one review
+    for word in words:
+        if word in index2word_set:
+            nwords = nwords + 1.
+            # make new vector
+            feature_vec = np.add(feature_vec, model[word])
+
+    feature_vec = np.divide(feature_vec, nwords)
+    return feature_vec
+
+# this step is making lookup table V
+def get_avg_feature_vec(reviews, model, num_features):
+    counter = 0.
+    reviewFeatureVecs = np.zeros((len(reviews), num_features), dtype="float32")
+
+    for review in reviews:
+        # print when it's 1000n
+        if counter % 1000. == 0.:
+            print("Review %d of %d" % (counter, len(reviews)))
+        reviewFeatureVecs[int(counter)] = make_feature_vec(review, model, num_features)
+        counter = counter + 1.
+    return reviewFeatureVecs
+
+# data preprocessing using utility file not using stopwords
+def getCleanReviews(reviews):
+    clean_reviews = []
+    clean_reviews = reviews['review'].apply(KaggleWord2VecUtility.review_to_words)
+    return clean_reviews
+
+# preprocessing -> calculate average of vector
+trainDataVecs = get_avg_feature_vec(getCleanReviews(train), model, num_features)
+testDataVecs = get_avg_feature_vec(getCleanReviews(test), model, num_features)
+
+# actual learning by test data features
+from sklearn.ensemble import RandomForestClassifier
+
+forest = RandomForestClassifier(n_estimators=100, n_jobs=-1, random_state=2018)
+
+forest = forest.fit(trainDataVecs, train["sentiment"])
+
+from sklearn.model_selection import cross_val_score
+score = np.mean(cross_val_score(forest, trainDataVecs, train['sentiment'], cv=10, scoring='roc_auc'))
+
+result = forest.predict(testDataVecs)
+
+# export as csv file for submit
+output = pd.DataFrame(data={"id": test["id"], "sentiment": result})
+output.to_csv('C:/bag-of-words-dataset/Word2Vec_AverageVectors_{0:.5f}.csv'.format(score), index=False, quoting=3)
+
+output_sentiment = output['sentiment'].value_counts()
+print(output_sentiment[0] - output_sentiment[1])
