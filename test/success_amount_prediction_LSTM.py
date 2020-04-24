@@ -3,18 +3,18 @@ import pandas as pd
 import numpy as np
 import matplotlib.pylab as plt
 
-df = pd.read_csv('D:/success_amount_prediction/hourFactData.csv', parse_dates=['date_hour_key'], index_col='date_hour_key', delimiter=',', quoting=3)
+df = pd.read_csv('D:/success_amount_prediction/hourFactData_1.csv', parse_dates=['date_hour_key'], index_col='date_hour_key', delimiter=',', quoting=3)
 # check called csv file
 print(df.head())
 
 # first of all, let's test this model by only success_amount
-del df['success_count']
-del df['fail_count']
-del df['fail_amount']
+# del df['success_count']
+# del df['fail_count']
+# del df['fail_amount']
 
 print(df.head())
-plt.title('success_amount_pattern')
-plt.plot(df['success_amount'])
+plt.title('success_count_pattern')
+plt.plot(df['success_count'])
 plt.show()
 
 # split train, test dataset
@@ -22,8 +22,8 @@ print(pd.Timestamp('2020-02-25T05'))
 split_criteria = pd.Timestamp('2020-02-25T05')
 
 # 3000row = 2020-02-25 05:00:00
-train = df.loc[:split_criteria, ['success_amount']]
-test = df.loc[split_criteria:, ['success_amount']]
+train = df.loc[:split_criteria, ['success_amount', 'success_count', 'fail_count', 'fail_amount']]
+test = df.loc[split_criteria:, ['success_amount', 'success_count', 'fail_count', 'fail_amount']]
 
 print('================="below is 10 values of train series"=================')
 print(train[:10])
@@ -40,25 +40,25 @@ print(train_sc[:10])
 print(test_sc[:10])
 
 # series -> dataframe
-train_sc_df = pd.DataFrame(train_sc, columns=['success_amount'], index=train.index)
-test_sc_df = pd.DataFrame(test_sc, columns=['success_amount'], index=test.index)
+train_sc_df = pd.DataFrame(train_sc, columns=['success_amount', 'success_count', 'fail_count', 'fail_amount'], index=train.index)
+test_sc_df = pd.DataFrame(test_sc, columns=['success_amount', 'success_count', 'fail_count', 'fail_amount'], index=test.index)
 
 print(train_sc_df.head())
 
 # refer to 24 previous data to predict next-hour success_amount
-for s in range(1, 25):
-    train_sc_df['success_amount_{}'.format(s)] = train_sc_df['success_amount'].shift(s)
-    test_sc_df['success_amount_{}'.format(s)] = test_sc_df['success_amount'].shift(s)
+for s in range(4, 28):
+    train_sc_df['success_amount_{}'.format(s)] = train_sc_df['success_count'].shift(s)
+    test_sc_df['success_amount_{}'.format(s)] = test_sc_df['success_count'].shift(s)
 
 print(train_sc_df.head(25))
 
 # remove all NaN value (axis = 1 -> row / axis = 0 -> col)
-X_train = train_sc_df.dropna().drop('success_amount', axis=1)
+X_train = train_sc_df.dropna().drop('success_count', axis=1)
 # y_train -> present value
-y_train = train_sc_df.dropna()[['success_amount']]
+y_train = train_sc_df.dropna()[['success_count']]
 
-X_test = test_sc_df.dropna().drop('success_amount', axis=1)
-y_test = test_sc_df.dropna()[['success_amount']]
+X_test = test_sc_df.dropna().drop('success_count', axis=1)
+y_test = test_sc_df.dropna()[['success_count']]
 
 print(X_train.head(10))
 
@@ -73,8 +73,8 @@ X_test = X_test.values
 y_test = y_test.values
 
 # (array) 2dim -> 3dim
-X_train_t = X_train.reshape(X_train.shape[0], 24, 1)
-X_test_t = X_test.reshape(X_test.shape[0], 24, 1)
+X_train_t = X_train.reshape(X_train.shape[0], 27, 1)
+X_test_t = X_test.reshape(X_test.shape[0], 27, 1)
 
 print('================="now, we prepared whole dataset (train, test)"=================')
 print(X_train_t.shape)
@@ -92,15 +92,21 @@ K.clear_session()
 # actual deep learning process
 model = Sequential()
 # input_shape agrs -> timestep, feature(col number, unit line)
-model.add(LSTM(32, input_shape=(24, 1)))
+model.add(LSTM(32, input_shape=(27, 1)))
 model.add(Dropout(0.3))
 # result(=prediction) -> one value(=next-time success_amount)
 model.add(Dense(1))
 # loss function -> the most basic function
-model.compile(loss='mean_squared_error', optimizer='adam', metrics=['accuracy'])
+model.compile(loss='mean_squared_error', optimizer='adam')
 
 early_stop = EarlyStopping(monitor='loss', patience=1, verbose=1)
-hist = model.fit(X_train_t, y_train, epochs=10, batch_size=40, verbose=1, callbacks=[early_stop])
+hist = model.fit(X_train_t, y_train, epochs=50, batch_size=20, verbose=1, callbacks=[early_stop])
 model.summary()
 
-plt.plot(hist.history['loss'])
+loss, acc = model.evaluate(X_test_t, y_test)
+print('acc -> ', acc)
+print('loss -> ', loss)
+
+# plt.title('accuracy of model')
+# plt.plot(model.metrics)
+# plt.show()
