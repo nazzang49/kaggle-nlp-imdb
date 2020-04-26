@@ -47,8 +47,8 @@ print(train_sc_df.head())
 
 # refer to 24 previous data to predict next-hour success_amount
 for s in range(4, 28):
-    train_sc_df['success_amount_{}'.format(s)] = train_sc_df['success_count'].shift(s)
-    test_sc_df['success_amount_{}'.format(s)] = test_sc_df['success_count'].shift(s)
+    train_sc_df['success_count_{}'.format(s)] = train_sc_df['success_count'].shift(s)
+    test_sc_df['success_count_{}'.format(s)] = test_sc_df['success_count'].shift(s)
 
 print(train_sc_df.head(25))
 
@@ -101,12 +101,11 @@ model.compile(loss='mean_squared_error', optimizer='adam')
 
 early_stop = EarlyStopping(monitor='loss', patience=1, verbose=1)
 hist = model.fit(X_train_t, y_train, epochs=50, batch_size=20, verbose=1, callbacks=[early_stop])
+print(hist.history['loss'])
 model.summary()
+model.evaluate(X_test_t, y_test)
 
-loss, acc = model.evaluate(X_test_t, y_test)
-print('acc -> ', acc)
-print('loss -> ', loss)
+model.save('model_to_predict_success_count')
 
-# plt.title('accuracy of model')
-# plt.plot(model.metrics)
-# plt.show()
+# actual prediction
+print(model.predict(X_test_t))
